@@ -3,25 +3,21 @@ import React, {
     useCallback,
     useContext,
     useMemo,
-    useState
+    useReducer
 } from 'react';
+import createAction, { Action } from '../createActions';
 
-export type ToDo = {
+type ToDo = {
     label: string;
     isCompleted: boolean;
 };
 
-type Context = {
+type State = {
     toDoList: ToDo[];
     isCompletedVisible: boolean;
-    addToDo: (label: string) => void;
-    updateToDoLabel: () => void;
-    completeToDo: () => void;
-    removeToDo: () => void;
-    showCompleted: (flag: boolean) => void;
 };
 
-const initialContext: Context = {
+const initialState: State = {
     toDoList: [
         {
             label: 'Finish college',
@@ -36,7 +32,19 @@ const initialContext: Context = {
             isCompleted: false
         }
     ],
-    isCompletedVisible: false,
+    isCompletedVisible: false
+};
+
+type Context = State & {
+    addToDo: (label: string) => void;
+    updateToDoLabel: (index: number, label: string) => void;
+    completeToDo: (index: number) => void;
+    removeToDo: (index: number) => void;
+    showCompleted: (flag: boolean) => void;
+};
+
+const initialContext: Context = {
+    ...initialState,
     addToDo: (): void => {
         throw new Error('addToDo function must be overridden');
     },
@@ -54,6 +62,68 @@ const initialContext: Context = {
     }
 };
 
+const actionList = {
+    addTodo: createAction('ADD_TODO'),
+    updateToDoLabel: createAction('UPDATE_TODO_LABEL'),
+    completeToDo: createAction('COMPLETE_TODO'),
+    removeToDo: createAction('REMOVE_TODO'),
+    showCompleted: createAction('SHOW_COMPLETED'),
+};
+
+const reducer = (state: State, action: Action): State => {
+    switch (action.type) {
+        case actionList.addTodo.type:
+            return {
+                ...state,
+                toDoList: [
+                    ...state.toDoList,
+                    {
+                        label: action.payload,
+                        isCompleted: false
+                    }
+                ]
+            };
+
+        case actionList.updateToDoLabel.type: {
+            const newTodoList = [...state.toDoList];
+            newTodoList[action.payload.index].label = action.payload.label;
+
+            return {
+                ...state,
+                toDoList: newTodoList
+            };
+        }
+
+        case actionList.completeToDo.type: {
+            const newTodoList = [...state.toDoList];
+            newTodoList[action.payload].isCompleted = true;
+
+            return {
+                ...state,
+                toDoList: newTodoList
+            };
+        }
+
+        case actionList.removeToDo.type: {
+            const newTodoList = [...state.toDoList];
+            newTodoList.splice(action.payload, 1);
+            return {
+                ...state,
+                toDoList: newTodoList
+            }
+        }
+
+        case actionList.showCompleted.type:
+            return {
+                ...state,
+                isCompletedVisible: action.payload
+            };
+
+        default:
+            return state;
+    }
+};
+
 const ToDoContext = createContext<Context>(initialContext);
 
 type Props = {
@@ -61,29 +131,26 @@ type Props = {
 };
 
 export const ToDoProvider = ({ children }: Props) => {
-    const [contextState, setContext] = useState<Context>(initialContext);
+    const [state, dispatch] = useReducer(reducer, initialState);
 
-    const addToDo = useCallback(
-        (label: string) => setContext({
-            ...contextState,
-            toDoList: [
-                ...contextState.toDoList,
-                { label, isCompleted: false }
-            ]
-        }),
-        [contextState]
-    );
+    const addToDo = useCallback((label: string) => dispatch(actionList.addTodo(label)), []);
 
-    const showCompleted = useCallback(
-        (flag: boolean = true) => setContext({ ...contextState, isCompletedVisible: flag }),
-        [contextState]
-    );
+    const updateToDoLabel = useCallback((index: number, label: string) => dispatch(actionList.updateToDoLabel({ index, label })), []);
+
+    const completeToDo = useCallback((index: number) => dispatch(actionList.completeToDo(index)), []);
+
+    const removeToDo = useCallback((index: number) => dispatch(actionList.removeToDo(index)), []);
+
+    const showCompleted = useCallback((flag: boolean) => dispatch(actionList.showCompleted(flag)), []);
 
     const data = useMemo((): Context => ({
-        ...contextState,
+        ...state,
         addToDo,
-        showCompleted
-    }), [contextState, addToDo, showCompleted]);
+        updateToDoLabel,
+        completeToDo,
+        removeToDo,
+        showCompleted,
+    }), [state, addToDo, updateToDoLabel, completeToDo, removeToDo, showCompleted]);
 
     return (
         <ToDoContext.Provider value={data}>
