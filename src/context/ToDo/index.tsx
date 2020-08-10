@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import createAction, { Action } from '../createActions';
 
-type ToDo = {
+export type ToDo = {
     label: string;
     isCompleted: boolean;
 };
@@ -39,6 +39,7 @@ type Context = State & {
     addToDo: (label: string) => void;
     updateToDoLabel: (index: number, label: string) => void;
     completeToDo: (index: number) => void;
+    revertToDo: (index: number) => void;
     removeToDo: (index: number) => void;
     showCompleted: (flag: boolean) => void;
 };
@@ -54,6 +55,9 @@ const initialContext: Context = {
     completeToDo: (): void => {
         throw new Error('completeToDo function must be overridden');
     },
+    revertToDo: (): void => {
+        throw new Error('revertToDo function must be overridden');
+    },
     removeToDo: (): void => {
         throw new Error('removeToDo function must be overridden');
     },
@@ -66,6 +70,7 @@ const actionList = {
     addTodo: createAction('ADD_TODO'),
     updateToDoLabel: createAction('UPDATE_TODO_LABEL'),
     completeToDo: createAction('COMPLETE_TODO'),
+    revertToDo: createAction('REVERT_TODO'),
     removeToDo: createAction('REMOVE_TODO'),
     showCompleted: createAction('SHOW_COMPLETED'),
 };
@@ -97,6 +102,16 @@ const reducer = (state: State, action: Action): State => {
         case actionList.completeToDo.type: {
             const newTodoList = [...state.toDoList];
             newTodoList[action.payload].isCompleted = true;
+
+            return {
+                ...state,
+                toDoList: newTodoList
+            };
+        }
+
+        case actionList.revertToDo.type: {
+            const newTodoList = [...state.toDoList];
+            newTodoList[action.payload].isCompleted = false;
 
             return {
                 ...state,
@@ -139,6 +154,8 @@ export const ToDoProvider = ({ children }: Props) => {
 
     const completeToDo = useCallback((index: number) => dispatch(actionList.completeToDo(index)), []);
 
+    const revertToDo = useCallback((index: number) => dispatch(actionList.revertToDo(index)), []);
+
     const removeToDo = useCallback((index: number) => dispatch(actionList.removeToDo(index)), []);
 
     const showCompleted = useCallback((flag: boolean) => dispatch(actionList.showCompleted(flag)), []);
@@ -148,9 +165,10 @@ export const ToDoProvider = ({ children }: Props) => {
         addToDo,
         updateToDoLabel,
         completeToDo,
+        revertToDo,
         removeToDo,
         showCompleted,
-    }), [state, addToDo, updateToDoLabel, completeToDo, removeToDo, showCompleted]);
+    }), [state, addToDo, updateToDoLabel, completeToDo, revertToDo, removeToDo, showCompleted]);
 
     return (
         <ToDoContext.Provider value={data}>

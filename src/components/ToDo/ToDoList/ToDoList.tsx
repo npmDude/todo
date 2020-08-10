@@ -1,48 +1,59 @@
-import Grid from '@material-ui/core/Grid';
-import Paper from '@material-ui/core/Paper';
-import { createStyles, makeStyles } from '@material-ui/core/styles';
-import Switch from '@material-ui/core/Switch';
-import Typography from '@material-ui/core/Typography';
-import { Theme, useAppContext } from 'context/App';
-import React from 'react';
-
-const useStyles = makeStyles(() => createStyles({
-  paper: {
-    margin: `100px auto`,
-    maxWidth: `500px`,
-    padding: `20px 15px`
-  }
-}));
+import React, { useState } from 'react';
+import { useToDoContext } from '../../../context/ToDo';
+import { ToDoItem } from '../ToDoItem';
+import AddIcon from '@material-ui/icons/Add';
+import IconButton from '@material-ui/core/IconButton'; import Grid from '@material-ui/core/Grid';
+import Tooltip from '@material-ui/core/Tooltip';
+import TextField from '@material-ui/core/TextField';
 
 const ToDoList = () => {
-  const classes = useStyles();
-  const { themeType, setTheme } = useAppContext();
+  const { toDoList, isCompletedVisible, addToDo } = useToDoContext();
+  const [label, setLabel] = useState('');
 
+  const renderListItems = toDoList.map((todo, index) => ({ ...todo, id: index }))
+    .filter(todo => isCompletedVisible ? true : !todo.isCompleted)
+    .sort((a, b) => {
+      if (a.isCompleted === b.isCompleted) {
+        return 0;
+      } else if (a.isCompleted) {
+        return 1;
+      } else {
+        return -1;
+      }
+    }).map(todo => {
+      return (
+        <ToDoItem key={todo.id} {...todo} />
+      );
+    });
 
-  const handleSwitchChange = (_: React.ChangeEvent<HTMLInputElement>, checked: boolean) => {
-    if (checked) {
-      setTheme(Theme.DARK);
-    } else {
-      setTheme(Theme.LIGHT);
-    }
+  const handleAddClick = () => {
+    addToDo(label);
+    setLabel('');
   };
 
   return (
-    <Paper className={classes.paper}>
-      <Grid container>
+    <>
+      {renderListItems}
+
+
+      <Grid container alignItems="center">
         <Grid item xs>
-          <Typography component="h1" variant="h4" >ToDo</Typography>
+          <TextField
+            label="Add To Do"
+            value={label}
+            onChange={event => setLabel(event.currentTarget.value)}
+          />
         </Grid>
 
         <Grid item xs="auto">
-          <Switch
-            checked={themeType === Theme.DARK}
-            onChange={handleSwitchChange}
-            inputProps={{ 'aria-label': 'checkbox' }}
-          />
+          <Tooltip title="Add" aria-label="add">
+            <IconButton color="primary" onClick={handleAddClick}>
+              <AddIcon />
+            </IconButton>
+          </Tooltip>
         </Grid>
       </Grid>
-    </Paper>
+    </>
   );
 };
 

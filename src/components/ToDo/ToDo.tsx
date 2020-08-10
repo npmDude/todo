@@ -4,6 +4,7 @@ import classNames from 'classnames';
 import { ToDoProvider } from 'context/ToDo';
 import React from 'react';
 import { ToDoHeader } from './ToDoHeader';
+import { ToDoList } from './ToDoList';
 
 const useStyles = makeStyles(() => createStyles({
     paper: {
@@ -26,6 +27,8 @@ const ToDo = ({ className }: ToDoProps) => {
         >
             <ToDoProvider>
                 <ToDoHeader />
+
+                <ToDoList />
             </ToDoProvider>
         </Paper>
     );
